@@ -20,24 +20,26 @@ namespace Proxet.Tournament
              * Retrievement to hashtable? With hash based on waiting_time's standart deviation?
              * Partial retrievement?
              */
-            var players = from row in System.IO.File.ReadLines(filePath).Skip(1)
-                          let unseparated = row.Split('\t')
-                          select new TeamEntry
-                          {
-                              Username = unseparated[0],
-                              WaitingTime = ushort.Parse(unseparated[1]),
-                              VehicleClass = byte.Parse(unseparated[2])
-                          };
+            var players = System.IO.File.ReadLines(filePath)
+                                        .Skip(1)
+                                        .Select(row => row.Split('\t'))
+                                        .Select(entityArray => new TeamEntry
+                                        {
+                                            Username = entityArray[0],
+                                            WaitingTime = ushort.Parse(entityArray[1]),
+                                            VehicleClass = byte.Parse(entityArray[2])
+                                        });
 
             /**
              * 1. Longest waiting time (should import all rows to analyze though)
              */
             var orderedPlayers = players.OrderByDescending(player => player.WaitingTime);
 
-            var firstLoopBuffer = 24; // > 9*2
-            var mainBucket = orderedPlayers.Take(firstLoopBuffer)
-                                           .ToList();
+            var takeCount = 24; // > 9*2
             var concurrentPool = new System.Collections.Concurrent.ConcurrentBag<TeamEntry>();
+            var playersBucket = orderedPlayers.Take(takeCount)
+                                              .ToList()
+                                              .AsEnumerable();
             /**
              * 2. First multithread loop (some boost acquired)
              */
@@ -46,10 +48,10 @@ namespace Proxet.Tournament
                      new ParallelOptions() { MaxDegreeOfParallelism = 3 },
                      counter =>
                      {
-                         mainBucket.Where(player => player.VehicleClass == counter)
-                                 .Take(6)
-                                 .ToList()
-                                 .ForEach(player => concurrentPool.Add(player));
+                         playersBucket.Where(player => player.VehicleClass == counter)
+                                      .Take(6)
+                                      .ToList()
+                                      .ForEach(player => concurrentPool.Add(player));
                      }
             );
 
@@ -64,14 +66,15 @@ namespace Proxet.Tournament
             /**
              * 3. Additional looping if final count wasn't found (no sense in multithreading)
              */
-            var skipIndex = firstLoopBuffer;
-            var takeIndex = 9;
-            var playersBucket = default(IEnumerable<TeamEntry>);
+            var skipCount = takeCount;
+            takeCount = 9;
             var teams = concurrentPool.GroupBy(player => player.VehicleClass)
                                       .ToDictionary(g => g.Key, g => g.ToList());
+
             do
             {
-                playersBucket = orderedPlayers.Skip(skipIndex).Take(takeIndex);
+                playersBucket = orderedPlayers.Skip(skipCount)
+                                              .Take(takeCount);
 
                 foreach (var player in playersBucket)
                 {
@@ -87,7 +90,7 @@ namespace Proxet.Tournament
                     }
                 }
 
-                skipIndex += takeIndex;
+                skipCount += takeCount;
             }
             while (teams.Values.Sum(list => list.Count) != 18);
 
@@ -104,6 +107,5 @@ namespace Proxet.Tournament
             names.Where((_, index) => index % 2 != 0).ToArray(),
             names.Where((_, index) => index % 2 == 0).ToArray()
         );
-
     }
 }
