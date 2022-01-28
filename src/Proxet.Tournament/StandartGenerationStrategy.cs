@@ -7,7 +7,23 @@ namespace Proxet.Tournament
     {
         public (string[] team1, string[] team2) Generate(IEnumerable<UsernameWaitingProfile> players)
         {
-            return (Enumerable.Empty<string>().ToArray(), Enumerable.Empty<string>().ToArray());          
+            var orderedPlayers = players.OrderBy(p => p.VehicleClass)
+                .ThenByDescending(p => p.WaitingTime);
+
+            var teams = orderedPlayers.GroupBy(player => player.VehicleClass)
+                .ToDictionary(g => g.Key, g => g.Take(6).ToList());
+
+            return EvenAndOddPartitionOf(
+                teams.Values.SelectMany(x => x)
+                            .Select(player => player.Username)
+            );       
         }
+
+        private (string[] team1, string[] team2) EvenAndOddPartitionOf(IEnumerable<string> names)
+        =>
+        (
+            names.Where((_, index) => index % 2 != 0).ToArray(),
+            names.Where((_, index) => index % 2 == 0).ToArray()
+        );
     }
 }
