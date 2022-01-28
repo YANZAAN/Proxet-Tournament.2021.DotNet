@@ -7,13 +7,25 @@ namespace Proxet.Tournament
 {
     public class ParallelGenerationStrategy : ITeamGenerationStrategy
     {
+        /// <summary>
+        ///     Initial player chunk retrieved in parallel
+        /// </summary>
+        private int _initialChunkSize;
+        /// <summary>
+        ///     Subsequent chunk size for additions if parallel extraction result wasn't enough
+        /// </summary>
+        private int _bufferChunkSize;
+        public ParallelGenerationStrategy(int initialChunkSize = 24, int bufferChunkSize = 6)
+        {
+            _initialChunkSize = initialChunkSize;
+            _bufferChunkSize = bufferChunkSize;
+        }
+
         public (string[] team1, string[] team2) Generate(IEnumerable<UsernameWaitingProfile> players)
         {
             var orderedPlayers = players.OrderByDescending(player => player.WaitingTime);
-
-            var takeCount = 24; // > 9*2
             var playersPool = new ConcurrentBag<UsernameWaitingProfile>();
-            var playersBucket = orderedPlayers.Take(takeCount)
+            var playersBucket = orderedPlayers.Take(_initialChunkSize)
                                               .ToArray()
                                               .AsEnumerable();
 
@@ -38,40 +50,29 @@ namespace Proxet.Tournament
                 );
             }
 
-            /**
-             * Additional looping if final count wasn't found (no sense in multithreading)
-             */
-            var skipCount = takeCount;
-            takeCount = 6;
+            var skipCount = _initialChunkSize;
             var teams = playersPool.GroupBy(player => player.VehicleClass)
                                    .ToDictionary(g => g.Key, g => g.ToList());
 
             do
             {
                 playersBucket = orderedPlayers.Skip(skipCount)
-                                              .Take(takeCount);
+                                              .Take(_bufferChunkSize);
 
                 foreach (var player in playersBucket)
                 {
-                    if (!teams.ContainsKey(player.VehicleClass))
-                    {
-                        teams.Add(player.VehicleClass, new List<UsernameWaitingProfile>() { player });
-                        continue;
-                    }
-
                     if (teams[player.VehicleClass].Count < 6)
                     {
                         teams[player.VehicleClass].Add(player);
                     }
                 }
 
-                skipCount += takeCount;
+                skipCount += _bufferChunkSize;
             }
             while (teams.Values.Sum(list => list.Count) != 18);
 
             return EvenAndOddPartitionOf(
                 teams.Values.SelectMany(x => x)
-                            .ToArray()
                             .Select(player => player.Username)
             );
         }
