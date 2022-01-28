@@ -18,18 +18,18 @@ namespace Proxet.Tournament
         public (string[] team1, string[] team2) GenerateTeams(string filePath, ITeamGenerationStrategy preferableGenerationStrategy = default)
         {
             var players = System.IO.File.ReadLines(filePath)
-                                        .Skip(1)
-                                        .Select(row => row.Split('\t'))
-                                        .Select(list => new UsernameWaitingProfile
-                                        {
-                                            Username = list[0],
-                                            WaitingTime = int.Parse(list[1]),
-                                            VehicleClass = int.Parse(list[2])
-                                        });
+                .Skip(1)
+                .Select(row => row.Split('\t'))
+                .Select(list => new UsernameWaitingProfile
+                {
+                    Username = list[0],
+                    WaitingTime = int.Parse(list[1]),
+                    VehicleClass = int.Parse(list[2])
+                });
 
             var generationStrategy = preferableGenerationStrategy ??
-                                     _generationStrategy ??
-                                     new ParallelGenerationStrategy();
+                _generationStrategy ??
+                new ParallelGenerationStrategy();
 
             var teams = generationStrategy.Generate(players);
 

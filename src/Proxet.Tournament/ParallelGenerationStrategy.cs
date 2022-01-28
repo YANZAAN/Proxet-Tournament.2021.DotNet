@@ -26,38 +26,38 @@ namespace Proxet.Tournament
             var orderedPlayers = players.OrderByDescending(player => player.WaitingTime);
             var playersPool = new ConcurrentBag<UsernameWaitingProfile>();
             var playersBucket = orderedPlayers.Take(_initialChunkSize)
-                                              .ToArray()
-                                              .AsEnumerable();
+                .ToArray()
+                .AsEnumerable();
 
-            Parallel
-                .For(1, 4,
-                     new ParallelOptions() { MaxDegreeOfParallelism = 3 },
-                     counter =>
-                     {
-                         AddToConcurrentBag(
-                             playersPool,
-                             playersBucket.Where(player => player.VehicleClass == counter)
-                                          .Take(6)
-                                          .ToArray()
-                         );
-                     }
+            Parallel.For(1, 4, new ParallelOptions() { MaxDegreeOfParallelism = 3 },
+                counter =>
+                {
+                    var bucket = playersBucket
+                        .Where(player => player.VehicleClass == counter)
+                        .Take(6)
+                        .ToArray();
+
+                    foreach (var player in bucket)
+                    {
+                        playersPool.Add(player);
+                    }
+                }
             );
 
             if (playersPool.Count == 18)
             {
-                return EvenAndOddPartitionOf(
-                    playersPool.Select(player => player.Username)
-                );
+                return playersPool.Select(player => player.Username)
+                    .GetEvenAndOddPartition();
             }
 
             var skipCount = _initialChunkSize;
             var teams = playersPool.GroupBy(player => player.VehicleClass)
-                                   .ToDictionary(g => g.Key, g => g.ToList());
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             do
             {
                 playersBucket = orderedPlayers.Skip(skipCount)
-                                              .Take(_bufferChunkSize);
+                    .Take(_bufferChunkSize);
 
                 foreach (var player in playersBucket)
                 {
@@ -71,25 +71,9 @@ namespace Proxet.Tournament
             }
             while (teams.Values.Sum(list => list.Count) != 18);
 
-            return EvenAndOddPartitionOf(
-                teams.Values.SelectMany(x => x)
-                            .Select(player => player.Username)
-            );
+            return teams.Values.SelectMany(x => x)
+                .Select(player => player.Username)
+                .GetEvenAndOddPartition();
         }
-
-        private void AddToConcurrentBag(ConcurrentBag<UsernameWaitingProfile> bag, IEnumerable<UsernameWaitingProfile> list)
-        {
-            for (var i = 0; i < list.Count(); i++)
-            {
-                bag.Add(list.ElementAt(i));
-            }
-        }
-
-        private (string[] team1, string[] team2) EvenAndOddPartitionOf(IEnumerable<string> names)
-        =>
-        (
-            names.Where((_, index) => index % 2 != 0).ToArray(),
-            names.Where((_, index) => index % 2 == 0).ToArray()
-        );
     }
 }
