@@ -5,13 +5,6 @@ using System.Collections.Concurrent;
 
 namespace Proxet.Tournament
 {
-    public class TeamEntry
-    {
-        public string Username;
-        public int WaitingTime; // ushort?
-        public int VehicleClass; // byte?
-    }
-
     public class TeamGenerator
     {
         public (string[] team1, string[] team2) GenerateTeams(string filePath)
@@ -19,7 +12,7 @@ namespace Proxet.Tournament
             var players = System.IO.File.ReadLines(filePath)
                                         .Skip(1)
                                         .Select(row => row.Split('\t'))
-                                        .Select(list => new TeamEntry
+                                        .Select(list => new UsernameWaitingProfile
                                         {
                                             Username = list[0],
                                             WaitingTime = int.Parse(list[1]),
@@ -29,7 +22,7 @@ namespace Proxet.Tournament
             var orderedPlayers = players.OrderByDescending(player => player.WaitingTime);
 
             var takeCount = 24; // > 9*2
-            var playersPool = new ConcurrentBag<TeamEntry>();
+            var playersPool = new ConcurrentBag<UsernameWaitingProfile>();
             var playersBucket = orderedPlayers.Take(takeCount)
                                               .ToArray()
                                               .AsEnumerable();
@@ -72,7 +65,7 @@ namespace Proxet.Tournament
                 {
                     if (!teams.ContainsKey(player.VehicleClass))
                     {
-                        teams.Add(player.VehicleClass, new List<TeamEntry>() { player });
+                        teams.Add(player.VehicleClass, new List<UsernameWaitingProfile>() { player });
                         continue;
                     }
 
@@ -93,7 +86,7 @@ namespace Proxet.Tournament
             );
         }
 
-        private static void AddToConcurrentBag(ConcurrentBag<TeamEntry> bag, IEnumerable<TeamEntry> list)
+        private static void AddToConcurrentBag(ConcurrentBag<UsernameWaitingProfile> bag, IEnumerable<UsernameWaitingProfile> list)
         {
             for (var i = 0; i < list.Count(); i++)
             {
