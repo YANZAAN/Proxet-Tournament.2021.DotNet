@@ -1,5 +1,6 @@
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
+
 using Proxet.Tournament.Domain;
 using Proxet.Tournament.Utility;
 

@@ -1,7 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
+﻿using System.Linq;
+
 using Proxet.Tournament.Application;
 using Proxet.Tournament.Domain;
 
