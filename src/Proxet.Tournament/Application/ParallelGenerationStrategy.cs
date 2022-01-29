@@ -2,8 +2,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Proxet.Tournament.Domain;
+using Proxet.Tournament.Utility;
 
-namespace Proxet.Tournament
+namespace Proxet.Tournament.Application
 {
     public class ParallelGenerationStrategy : ITeamGenerationStrategy
     {

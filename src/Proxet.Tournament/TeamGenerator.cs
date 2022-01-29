@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Proxet.Tournament.Application;
+using Proxet.Tournament.Domain;
 
 namespace Proxet.Tournament
 {

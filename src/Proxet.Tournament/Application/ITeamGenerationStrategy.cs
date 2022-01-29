@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using Proxet.Tournament.Domain;
 
-namespace Proxet.Tournament
+namespace Proxet.Tournament.Application
 {
     public interface ITeamGenerationStrategy
     {

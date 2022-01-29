@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Proxet.Tournament
+namespace Proxet.Tournament.Utility
 {
     public static class UtilityExtensions
     {

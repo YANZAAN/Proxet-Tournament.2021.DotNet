@@ -1,4 +1,4 @@
-namespace Proxet.Tournament
+namespace Proxet.Tournament.Domain
 {
     public struct UsernameWaitingProfile
     {
